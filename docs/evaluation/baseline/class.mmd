@@ -1,0 +1,39 @@
+%% Handwritten baseline; catalog: ./model.md
+classDiagram
+  class User["User: 利用者"] {
+    <<Entity>>
+    string id
+    string name
+    boolean canApprove
+  }
+  class Expense["Expense: 経費申請"] {
+    <<Entity>>
+    string id
+    integer amountJpy
+    state status
+  }
+  class Payment["Payment: 支払記録"] {
+    <<Entity>>
+    string id
+    string receiptNumber
+    datetime paidAt
+  }
+  class SubmitExpense["SubmitExpense: 申請する"] {
+    <<Command>>
+  }
+  class ApproveExpense["ApproveExpense: 承認する"] {
+    <<Command>>
+  }
+  class RejectExpense["RejectExpense: 却下する"] {
+    <<Command>>
+  }
+  class RecordPayment["RecordPayment: 完了済み支払を記録する"] {
+    <<Command>>
+  }
+  SubmitExpense ..> Expense : target
+  ApproveExpense ..> Expense : target
+  RejectExpense ..> Expense : target
+  RecordPayment ..> Expense : target
+  Expense "0..*" -- "1..1" User : ExpenseApplicant / 申請者
+  Expense "0..*" -- "0..1" User : ExpenseApprover / 承認者
+  Expense "1..1" -- "0..1" Payment : ExpensePayment / 支払記録

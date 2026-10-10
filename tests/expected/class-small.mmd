@@ -1,0 +1,12 @@
+%% Handwritten semantic reference: Commands are independent concepts.
+classDiagram
+  class Expense {
+    <<Entity>>
+    integer amountJpy
+    state status
+  }
+  class ApproveExpense {
+    <<Command>>
+  }
+  ApproveExpense ..> Expense : target
+  Expense "1..1" -- "0..1" Payment : ExpensePayment

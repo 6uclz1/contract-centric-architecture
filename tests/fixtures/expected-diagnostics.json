@@ -1,0 +1,302 @@
+[
+  {
+    "name": "duplicate-entity",
+    "code": "ID_DUPLICATE",
+    "path": [
+      "entities",
+      1,
+      "id"
+    ],
+    "line": 18,
+    "column": 5
+  },
+  {
+    "name": "duplicate-field",
+    "code": "ID_DUPLICATE",
+    "path": [
+      "entities",
+      0,
+      "fields",
+      1,
+      "id"
+    ],
+    "line": 12,
+    "column": 9
+  },
+  {
+    "name": "undefined-entity",
+    "code": "REF_NOT_FOUND",
+    "path": [
+      "relationships",
+      0,
+      "from"
+    ],
+    "line": 47,
+    "column": 5
+  },
+  {
+    "name": "undefined-rule",
+    "code": "REF_NOT_FOUND",
+    "path": [
+      "commands",
+      1,
+      "preconditions",
+      0
+    ],
+    "line": 114,
+    "column": 9
+  },
+  {
+    "name": "undefined-command",
+    "code": "REF_NOT_FOUND",
+    "path": [
+      "stateMachines",
+      0,
+      "transitions",
+      0,
+      "command"
+    ],
+    "line": 90,
+    "column": 9
+  },
+  {
+    "name": "undefined-machine",
+    "code": "REF_NOT_FOUND",
+    "path": [
+      "entities",
+      1,
+      "fields",
+      2,
+      "machine"
+    ],
+    "line": 30,
+    "column": 9
+  },
+  {
+    "name": "missing-machine-field",
+    "code": "FIELD_NOT_FOUND",
+    "path": [
+      "stateMachines",
+      0,
+      "field"
+    ],
+    "line": 78,
+    "column": 5
+  },
+  {
+    "name": "invalid-state-initial",
+    "code": "STATE_INVALID",
+    "path": [
+      "stateMachines",
+      0,
+      "initial"
+    ],
+    "line": 85,
+    "column": 5
+  },
+  {
+    "name": "invalid-state-from",
+    "code": "STATE_INVALID",
+    "path": [
+      "stateMachines",
+      0,
+      "transitions",
+      0,
+      "from"
+    ],
+    "line": 88,
+    "column": 9
+  },
+  {
+    "name": "invalid-state-to",
+    "code": "STATE_INVALID",
+    "path": [
+      "stateMachines",
+      0,
+      "transitions",
+      0,
+      "to"
+    ],
+    "line": 89,
+    "column": 9
+  },
+  {
+    "name": "duplicate-state",
+    "code": "STATE_INVALID",
+    "path": [
+      "stateMachines",
+      0,
+      "states",
+      5
+    ],
+    "line": 85,
+    "column": 9
+  },
+  {
+    "name": "invalid-multiplicity",
+    "code": "SCHEMA_INVALID",
+    "path": [
+      "relationships",
+      0,
+      "targetsPerSource",
+      "min"
+    ],
+    "line": 50,
+    "column": 7
+  },
+  {
+    "name": "invalid-type",
+    "code": "SCHEMA_INVALID",
+    "path": [
+      "entities",
+      0,
+      "fields",
+      0,
+      "type"
+    ],
+    "line": 10,
+    "column": 9
+  },
+  {
+    "name": "unknown-key",
+    "code": "SCHEMA_INVALID",
+    "path": [
+      "entities",
+      0,
+      "extra"
+    ],
+    "line": 18,
+    "column": 5
+  },
+  {
+    "name": "unsupported-version",
+    "code": "VERSION_UNSUPPORTED",
+    "path": [
+      "apiVersion"
+    ],
+    "line": 1,
+    "column": 1
+  },
+  {
+    "name": "machine-binding",
+    "code": "MACHINE_BINDING_INVALID",
+    "path": [
+      "stateMachines",
+      0,
+      "field"
+    ],
+    "line": 78,
+    "column": 5
+  },
+  {
+    "name": "state-optional",
+    "code": "MACHINE_BINDING_INVALID",
+    "path": [
+      "entities",
+      1,
+      "fields",
+      2,
+      "machine"
+    ],
+    "line": 30,
+    "column": 9
+  },
+  {
+    "name": "ambiguous-transition",
+    "code": "TRANSITION_AMBIGUOUS",
+    "path": [
+      "stateMachines",
+      0,
+      "transitions",
+      4,
+      "command"
+    ],
+    "line": 106,
+    "column": 9
+  },
+  {
+    "name": "command-target",
+    "code": "COMMAND_TARGET_MISMATCH",
+    "path": [
+      "stateMachines",
+      0,
+      "transitions",
+      0,
+      "command"
+    ],
+    "line": 90,
+    "column": 9
+  },
+  {
+    "name": "rule-kind",
+    "code": "RULE_KIND_MISMATCH",
+    "path": [
+      "commands",
+      1,
+      "preconditions",
+      0
+    ],
+    "line": 114,
+    "column": 9
+  },
+  {
+    "name": "rule-scope",
+    "code": "RULE_SCOPE_MISMATCH",
+    "path": [
+      "commands",
+      1,
+      "preconditions",
+      0
+    ],
+    "line": 114,
+    "column": 9
+  },
+  {
+    "name": "unique-optional",
+    "code": "CONSTRAINT_INVALID",
+    "path": [
+      "constraints",
+      0,
+      "fields",
+      0
+    ],
+    "line": 178,
+    "column": 9
+  },
+  {
+    "name": "unique-state",
+    "code": "CONSTRAINT_INVALID",
+    "path": [
+      "constraints",
+      0,
+      "fields",
+      0
+    ],
+    "line": 178,
+    "column": 9
+  },
+  {
+    "name": "unique-duplicate",
+    "code": "CONSTRAINT_INVALID",
+    "path": [
+      "constraints",
+      0,
+      "fields",
+      1
+    ],
+    "line": 179,
+    "column": 9
+  },
+  {
+    "name": "unique-missing-field",
+    "code": "FIELD_NOT_FOUND",
+    "path": [
+      "constraints",
+      0,
+      "fields",
+      0
+    ],
+    "line": 178,
+    "column": 9
+  }
+]

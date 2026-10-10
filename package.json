@@ -1,0 +1,30 @@
+{
+  "name": "cca-poc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": "24.19.0"
+  },
+  "scripts": {
+    "cca": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "render": "tsx scripts/render.ts",
+    "validate": "pnpm cca validate --input contracts/expenses/contract.yaml --warnings-as-errors",
+    "check": "pnpm cca check --input contracts/expenses/contract.yaml --out docs/generated/expenses"
+  },
+  "dependencies": {
+    "yaml": "2.8.1",
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.0",
+    "typescript": "5.9.3",
+    "tsx": "4.20.6",
+    "vitest": "3.2.4",
+    "mermaid": "11.12.1",
+    "playwright": "1.56.1"
+  }
+}

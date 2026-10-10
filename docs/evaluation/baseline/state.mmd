@@ -1,0 +1,9 @@
+%% Handwritten baseline; catalog: ./model.md
+stateDiagram-v2
+  state ExpenseLifecycle {
+    [*] --> draft
+    draft --> submitted : Submit / SubmitExpense / pre#58; - / post#58; -
+    submitted --> approved : Approve / ApproveExpense / pre#58; EXP-001, EXP-002 / post#58; EXP-003
+    submitted --> rejected : Reject / RejectExpense / pre#58; EXP-002 / post#58; -
+    approved --> paid : RecordPaid / RecordPayment / pre#58; - / post#58; EXP-005
+  }

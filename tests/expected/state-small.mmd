@@ -1,0 +1,7 @@
+%% Handwritten reference: no implicit final nodes or transitions.
+stateDiagram-v2
+  [*] --> draft
+  draft --> submitted : Submit / SubmitExpense / pre none / post none
+  submitted --> approved : Approve / ApproveExpense / pre EXP-001, EXP-002 / post EXP-003
+  submitted --> rejected : Reject / RejectExpense / pre EXP-002 / post none
+  approved --> paid : RecordPaid / RecordPayment / pre none / post EXP-005

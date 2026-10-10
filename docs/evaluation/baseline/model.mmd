@@ -1,0 +1,21 @@
+%% Handwritten baseline; catalog: ./model.md
+%% Dotted connectors do not claim identifying relationships.
+erDiagram
+  User["User: 利用者"] {
+    string id "required"
+    string name "required"
+    boolean canApprove "required"
+  }
+  Expense["Expense: 経費申請"] {
+    string id "required"
+    integer amountJpy "required"
+    state status "required"
+  }
+  Payment["Payment: 支払記録"] {
+    string id "required"
+    string receiptNumber "required"
+    datetime paidAt "required"
+  }
+  Expense }o..|| User : "ExpenseApplicant: 申請者"
+  Expense }o..o| User : "ExpenseApprover: 承認者"
+  Expense ||..o| Payment : "ExpensePayment: 支払記録"

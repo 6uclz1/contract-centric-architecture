@@ -1,0 +1,15 @@
+{
+  "entities": ["Expense", "Payment", "User"],
+  "relationships": {
+    "ExpenseApplicant": { "from": "Expense", "to": "User", "targetsPerSource": "1..1", "sourcesPerTarget": "0..*" },
+    "ExpenseApprover": { "from": "Expense", "to": "User", "targetsPerSource": "0..1", "sourcesPerTarget": "0..*" },
+    "ExpensePayment": { "from": "Expense", "to": "Payment", "targetsPerSource": "0..1", "sourcesPerTarget": "1..1" }
+  },
+  "transitions": {
+    "Submit": ["draft", "submitted", "SubmitExpense"],
+    "Approve": ["submitted", "approved", "ApproveExpense"],
+    "Reject": ["submitted", "rejected", "RejectExpense"],
+    "RecordPaid": ["approved", "paid", "RecordPayment"]
+  },
+  "approve": { "pre": ["EXP-001", "EXP-002"], "post": ["EXP-003"] }
+}

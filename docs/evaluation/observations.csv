@@ -1,0 +1,1 @@
+participant_id,experience,condition,order,task,variant,score,seconds,evidence_location,yaml_open_count,major_misunderstandings,errors_found,false_positives,review_seconds,update_seconds,manual_operations,missed_updates,unrelated_changed_files,total_changed_files,schema_generator_edits,edit_reason,notes
