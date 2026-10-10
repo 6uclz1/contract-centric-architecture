@@ -16,9 +16,17 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm typecheck
-      - run: pnpm test
+      - run: pnpm test:report
       - run: pnpm validate
       - run: pnpm check
+      - run: pnpm traceability --results .artifacts/test-results.json
+      - run: pnpm db:check
+      - run: pnpm db:up
+      - run: pnpm db:live
+      - run: pnpm db:test
+      - run: pnpm test:db
+      - run: pnpm db:down
+        if: always()
       - run: pnpm render
       - uses: actions/upload-artifact@v4
         with:

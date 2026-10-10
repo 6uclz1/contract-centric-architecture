@@ -1,0 +1,16 @@
+apiVersion: cca.dev/test-links/v1alpha1
+# These tests check declaration/rendering, not business-data compliance.
+tests:
+  - id: ModelSemantics
+    file: tests/generation.test.ts
+    title: matches the hand-written expected model semantics
+  - id: CatalogCompleteness
+    file: tests/generation.test.ts
+    title: catalog covers every structured definition and rule prose, with usable anchors
+links:
+  - { rule: EXP-001, tests: [ModelSemantics, CatalogCompleteness] }
+  - { rule: EXP-002, tests: [ModelSemantics, CatalogCompleteness] }
+  - { rule: EXP-003, tests: [ModelSemantics, CatalogCompleteness] }
+  - { rule: EXP-004, tests: [ModelSemantics, CatalogCompleteness] }
+  - { rule: EXP-005, tests: [CatalogCompleteness] }
+  - { rule: EXP-006, tests: [CatalogCompleteness] }

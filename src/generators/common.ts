@@ -19,13 +19,12 @@ export const erAttributeName = (id: string) =>
 export const classLabel = (s: string) => encoded(s).replace(/:/g, "#58;");
 export const stateLabel = (s: string) => encoded(s).replace(/:/g, "#58;");
 export const md = (s: string) =>
-  s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\|/g, "&#124;")
-    .replace(/\r\n?|\n/g, "<br>")
-    .replace(/[\\`*_[\]#]/g, (c) => `&#${c.codePointAt(0)};`);
+  s.replace(/\r\n?|\n/g, "\n").replace(/[&<>|\\`*_[\]#\n]/g, (c) => {
+    const escaped: Record<string, string> = {
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", "|": "&#124;", "\n": "<br>",
+    };
+    return escaped[c] ?? `&#${c.codePointAt(0)};`;
+  });
 export const anchor = (id: string) => "rule-" + Buffer.from(id).toString("hex");
 export const fieldType = (f: Field) =>
   f.type === "state"

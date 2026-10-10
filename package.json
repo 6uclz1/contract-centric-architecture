@@ -13,7 +13,15 @@
     "test": "vitest run",
     "render": "tsx scripts/render.ts",
     "validate": "pnpm cca validate --input contracts/expenses/contract.yaml --warnings-as-errors",
-    "check": "pnpm cca check --input contracts/expenses/contract.yaml --out docs/generated/expenses"
+    "check": "pnpm cca check --input contracts/expenses/contract.yaml --out docs/generated/expenses",
+    "test:report": "vitest run --reporter=default --reporter=json --outputFile=.artifacts/test-results.json",
+    "traceability": "pnpm cca test-links --input contracts/expenses/contract.yaml --links contracts/expenses/test-links.yaml --root . --warnings-as-errors",
+    "db:check": "pnpm cca db-check --input contracts/expenses/contract.yaml --db contracts/expenses/db-mapping.yaml --warnings-as-errors",
+    "db:up": "tsx scripts/local-db.ts up",
+    "db:down": "tsx scripts/local-db.ts down",
+    "db:live": "tsx scripts/local-db.ts check",
+    "db:test": "tsx scripts/local-db.ts test",
+    "test:db": "CCA_LIVE_DB=1 vitest run tests/integration/postgres.test.ts"
   },
   "dependencies": {
     "yaml": "2.8.1",

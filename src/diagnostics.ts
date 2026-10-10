@@ -20,7 +20,20 @@ export type Code =
   | "OUTPUT_UNEXPECTED"
   | "OUTPUT_SYMLINK"
   | "OUTPUT_MISSING"
-  | "OUTPUT_CHANGED";
+  | "OUTPUT_CHANGED"
+  | "RULE_TEST_UNLINKED"
+  | "TEST_UNLINKED"
+  | "TEST_FILE_INVALID"
+  | "TEST_RESULT_MISSING"
+  | "TEST_NOT_PASSED"
+  | "DB_SCHEMA_INVALID"
+  | "DB_MAPPING_INVALID"
+  | "DB_TYPE_MISMATCH"
+  | "DB_NULLABILITY_MISMATCH"
+  | "DB_UNIQUE_MISSING"
+  | "DB_CARDINALITY_MISMATCH"
+  | "DB_UNVERIFIED"
+  | "DB_LIVE_UNSUPPORTED";
 export interface Diagnostic {
   code: Code;
   severity: "error" | "warning";

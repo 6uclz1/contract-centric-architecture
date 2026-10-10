@@ -68,3 +68,74 @@ IRは内部専用。配列は集合として正規化、initialのみ明示値�
 M1〜M3の技術検証とM4の第三者比較を区別する。比較用の手書きMarkdownと三図、5問の採点基準、変更レビュー課題、CSV記録欄を用意した。第三者の有用性評価は未実施であり、CCA仮説の採択は保留。
 
 成功したvalidateが保証するのは入力構造・参照・列挙したモデル整合性。Rule本文の意味、業務データ、アプリ実装、DB制約、通知配送や送金を保証しない。詳細は[結果記録](docs/evaluation/results.md)。
+
+## Phase 2以降の技術拡張
+
+Phase 2候補の四項目（Contract差分レビュー、Agent向け局所コンテキスト、Ruleとテストの対応、限定DB整合検査）を追加した。[範囲と選択規則](docs/phase2-plan.md)を参照。
+
+```sh
+# 旧版と新版をそれぞれ検証して比較。差分ありでも終了0。
+pnpm cca review --before path/to/before.yaml --input contracts/expenses/contract.yaml
+# 種類とIDで選択し、関連する仕様をMarkdownで表示。
+pnpm cca context --input contracts/expenses/contract.yaml --kind command --id ApproveExpense
+pnpm cca context --input contracts/expenses/contract.yaml --kind rule --id EXP-004 --format json
+```
+
+両コマンドは標準出力のみでファイルを作らない。`--out`は受理しない。JSONは`{diagnostics, report}`（reportはMarkdown、不合格ならnull）。既存三コマンドのJSON診断配列は変更しない。`--warnings-as-errors`で入力の警告を失敗にする。contextの対象不在は終了1。差分はプロパティ単位で表示し、変更される生成ファイルも示す。業務上の意味・互換性は判定しない。
+
+contextはrootへの直接の逆参照と、それらの定義が持つ参照先の閉包を保持する。Machineは全遷移を保つため、単一Commandの指定でも他Commandが含まれる場合がある。未選択の関係・Ruleは全Contractで確認する。第三者評価の結論は引き続き保留。Ruleとテストの対応・DB整合検査の仕様は[追加入力仕様](docs/extension-inputs.md)を参照。
+
+```sh
+# 宣言されたRule/test対応とファイル存在を確認。
+pnpm traceability
+# 実際のVitest JSONを出力し、完全テスト名と実行結果まで照合。
+pnpm test:report
+pnpm traceability --results .artifacts/test-results.json
+# 説明用DB schema snapshotと明示マッピングの整合性を確認。
+pnpm db:check
+```
+
+直接CLIを使う場合:
+
+```sh
+pnpm cca test-links --input contracts/expenses/contract.yaml --links contracts/expenses/test-links.yaml --root . --results .artifacts/test-results.json --warnings-as-errors
+pnpm cca db-check --input contracts/expenses/contract.yaml --db contracts/expenses/db-mapping.yaml --warnings-as-errors
+```
+
+両CLIも標準出力のみ、JSONは`{diagnostics, report}`。Rule未対応・DB未マッピング・FKで検証できない逆側minは警告、厳格モードでは失敗。test-linksは結果省略時にテスト名と実行を未検証と表示する。結果を指定してもRule本文の正しさや意味的なテスト網羅性は保証しない。DB入力はlogical snapshotで、実DBには接続しない。物理FKをContractのRelationshipから推測せず、sampleではPayment側がFKを持つことを明示する。CIはtest:report後にtraceabilityとdb:checkも実行する。
+
+## コンテナのローカルDBで検証
+
+Docker EngineとComposeを用意する。macOSでColimaを使う場合:
+
+```sh
+brew install colima docker docker-compose
+# HomebrewのComposeをDocker CLI pluginとして認識させる。
+mkdir -p ~/.docker/cli-plugins
+ln -s /opt/homebrew/lib/docker/cli-plugins/docker-compose ~/.docker/cli-plugins/docker-compose
+colima start --profile cca --cpu 2 --memory 2
+```
+
+既にCompose pluginがある環境ではsymlink作成は不要。Intel MacのHomebrewはpluginのパスを`brew --prefix`に合わせる。Docker Desktop/Linux Engineでも同じCompose設定を使用できる。
+
+```sh
+pnpm db:up       # PostgreSQL 17.11を起動してhealthyまで待つ
+pnpm db:live     # 実DBカタログを読み取り、Contractと明示マッピングを比較
+pnpm db:test     # 七つの物理制約動作確認。テストデータはすべてROLLBACK
+pnpm test:db     # 実DBの六件の統合テスト。DDL変更もROLLBACK
+pnpm db:down     # 停止。named volumeのデータは保持
+```
+
+`127.0.0.1:55432`、database/userは`cca`、ローカル開発用passwordは`cca_local_only`。ポート変更は`CCA_DB_PORT=別ポート pnpm db:up`。今回の端末はColimaの`colima-cca` contextを使用する。再起動後は`colima start --profile cca`でDocker Engineを起動する。
+
+```sh
+docker compose exec db psql -U cca -d cca
+```
+
+[compose.yaml](compose.yaml)と[手書き物理fixture](infra/postgres/init.sql)を使用する。初期SQLはvolumeが空の初回起動だけで実行され、既存データを変更するmigrationではない。fixtureを変更した場合も既存DBへ自動適用しない。停止ではvolumeを削除しない。fixtureから完全に作り直す場合だけ、データを消す`docker compose down --volumes`を明示実行してから再起動する。
+
+db:liveはpublic schemaのカタログをread-only/repeatable-read transactionで取得し、PK・full unique・FK・NOT NULL・native enumをlogical snapshotへ変換する。説明用`db-mapping.yaml`のtablesは一切再利用せず、entities/relationships/constraintsの明示対応だけを使用する。実測snapshotは`.artifacts/db-live.yaml`へ保存する。型・状態集合・多重度の正本は既存Contract、物理fixtureは比較対象。
+
+対応するPostgreSQLは17のみ。array/domain/非対応型、default/identity/generated、partial/expression/invalid/deferrable unique、非検証FK・cascade・CHECK・trigger・RLS・view・partition/inheritanceなどは`DB_LIVE_UNSUPPORTED`で拒否する。桁数・長さ・timezone・collationの意味や業務データのRule本文は評価しない。db:testはoptional approver、NOT NULL二件、enum、orphan FK、申請ごとの支払unique、receipt uniqueを実動作で確認し、失敗時も接続終了でtransactionを破棄する。業務アプリやRule評価器は追加しない。
+
+通常の`pnpm test`はDocker不要で、DB統合テストを明示的にskipする。`pnpm test:db`はDBを必須とし、利用できなければ失敗する。CIはCompose DBを起動し同じ実測検証を行う。リモートCIの成功は未確認。

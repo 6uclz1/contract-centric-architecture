@@ -7,6 +7,7 @@ import {
   LineCounter,
   type Node,
 } from "yaml";
+import type { z } from "zod";
 import { contractSchema, type Contract } from "./schema.js";
 import {
   stableDiagnostics,
@@ -41,7 +42,12 @@ export interface Parsed {
   source: SourceMap;
   diagnostics: Diagnostic[];
 }
-export function parseContract(input: string, file = "contract.yaml"): Parsed {
+export function parseInput<T>(
+  input: string,
+  file: string,
+  schema: z.ZodType<T>,
+  apiVersion: string,
+): { value?: T; source: SourceMap; diagnostics: Diagnostic[] } {
   const source = new SourceMap(file),
     diagnostics: Diagnostic[] = [],
     lines = new LineCounter();
@@ -137,7 +143,7 @@ export function parseContract(input: string, file = "contract.yaml"): Parsed {
     typeof raw === "object" &&
     "apiVersion" in raw &&
     typeof raw.apiVersion === "string" &&
-    raw.apiVersion !== "cca.dev/v1alpha1"
+    raw.apiVersion !== apiVersion
   ) {
     diagnostics.push({
       code: "VERSION_UNSUPPORTED",
@@ -151,7 +157,7 @@ export function parseContract(input: string, file = "contract.yaml"): Parsed {
     });
     return { source, diagnostics };
   }
-  const checked = contractSchema.safeParse(raw);
+  const checked = schema.safeParse(raw);
   if (!checked.success) {
     for (const issue of checked.error.issues) {
       const parts = issue.path.filter(
@@ -192,7 +198,12 @@ export function parseContract(input: string, file = "contract.yaml"): Parsed {
     }
     return { source, diagnostics: stableDiagnostics(diagnostics) };
   }
-  const contract = checked.data;
+  return { value: checked.data, source, diagnostics: [] };
+}
+export function parseContract(input: string, file = "contract.yaml"): Parsed {
+  const parsed = parseInput(input, file, contractSchema, "cca.dev/v1alpha1");
+  const { source, diagnostics, value: contract } = parsed;
+  if (!contract) return { source, diagnostics };
   for (const kind of [
     "entities",
     "relationships",

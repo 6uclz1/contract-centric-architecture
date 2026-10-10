@@ -1,7 +1,7 @@
 import { z } from "zod";
 const id = z.string().regex(/^[A-Za-z][A-Za-z0-9_-]*$/);
 // Reject invisible controls and unpaired surrogates instead of silently dropping them.
-const text = z
+export const text = z
   .string()
   .refine(
     (s) =>

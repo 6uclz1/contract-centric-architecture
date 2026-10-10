@@ -1,0 +1,60 @@
+apiVersion: cca.dev/db-mapping/v1alpha1
+# Illustrative logical snapshot only: not introspected from a live database.
+tables:
+  - id: users
+    columns:
+      - { id: id, type: string, nullable: false }
+      - { id: name, type: string, nullable: false }
+      - { id: can_approve, type: boolean, nullable: false }
+    primaryKey: { id: users_pk, columns: [id] }
+    uniqueKeys: []
+    foreignKeys: []
+  - id: expenses
+    columns:
+      - { id: id, type: string, nullable: false }
+      - { id: amount_jpy, type: integer, nullable: false }
+      - { id: status, type: enum, nullable: false, values: [draft, submitted, approved, rejected, paid] }
+      - { id: applicant_id, type: string, nullable: false }
+      - { id: approver_id, type: string, nullable: true }
+    primaryKey: { id: expenses_pk, columns: [id] }
+    uniqueKeys: []
+    foreignKeys:
+      - { id: applicant_fk, columns: [applicant_id], references: { table: users, columns: [id] } }
+      - { id: approver_fk, columns: [approver_id], references: { table: users, columns: [id] } }
+  - id: payments
+    columns:
+      - { id: id, type: string, nullable: false }
+      - { id: receipt_number, type: string, nullable: false }
+      - { id: paid_at, type: datetime, nullable: false }
+      - { id: expense_id, type: string, nullable: false }
+    primaryKey: { id: payments_pk, columns: [id] }
+    uniqueKeys:
+      - { id: receipt_unique, columns: [receipt_number] }
+      - { id: expense_unique, columns: [expense_id] }
+    foreignKeys:
+      - { id: expense_fk, columns: [expense_id], references: { table: expenses, columns: [id] } }
+entities:
+  - entity: User
+    table: users
+    fields:
+      - { field: id, column: id }
+      - { field: name, column: name }
+      - { field: canApprove, column: can_approve }
+  - entity: Expense
+    table: expenses
+    fields:
+      - { field: id, column: id }
+      - { field: amountJpy, column: amount_jpy }
+      - { field: status, column: status }
+  - entity: Payment
+    table: payments
+    fields:
+      - { field: id, column: id }
+      - { field: receiptNumber, column: receipt_number }
+      - { field: paidAt, column: paid_at }
+relationships:
+  - { relationship: ExpenseApplicant, owner: from, table: expenses, foreignKey: applicant_fk }
+  - { relationship: ExpenseApprover, owner: from, table: expenses, foreignKey: approver_fk }
+  - { relationship: ExpensePayment, owner: to, table: payments, foreignKey: expense_fk }
+constraints:
+  - { constraint: PaymentReceiptUnique, table: payments, key: receipt_unique }
