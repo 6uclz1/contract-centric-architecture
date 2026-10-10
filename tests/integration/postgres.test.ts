@@ -1,11 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { readFile } from "node:fs/promises";
 import { stringify } from "yaml";
-import { compile } from "../../src/validate.js";
-import { database, databaseSchema } from "../../src/extensions/database.js";
-import { parseInput } from "../../src/parser.js";
-import { postgresSnapshot } from "../../src/extensions/postgres.js";
-import { sql, inspectSQL, liveCheck } from "../../scripts/local-db.js";
+import { compile } from "../../src/contract/compile.js";
+import { database } from "../../src/application/commands/database.js";
+import { databaseSchema } from "../../src/features/database/schema.js";
+import { parseInput } from "../../src/support/input/parse.js";
+import { postgresSnapshot } from "../../src/adapters/postgres/snapshot.js";
+import { sql, inspectSQL } from "../../src/adapters/postgres/local.js";
+import { liveCheck } from "../../scripts/local-db.js";
 const live = process.env.CCA_LIVE_DB === "1";
 describe.skipIf(!live)("container PostgreSQL catalog and enforcement", () => {
   it("introspects real tables, enum, NOT NULL, PK, unique and FK", async () => {

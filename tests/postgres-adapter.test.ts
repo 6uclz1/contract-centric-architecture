@@ -1,5 +1,5 @@
 import { it, expect } from "vitest";
-import { postgresSnapshot } from "../src/extensions/postgres.js";
+import { postgresSnapshot } from "../src/adapters/postgres/snapshot.js";
 function catalog() {
   return {
     version: 170011,

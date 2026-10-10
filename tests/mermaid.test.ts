@@ -1,7 +1,7 @@
 import { it, expect, beforeAll, afterAll } from "vitest";
 import { readFileSync } from "node:fs";
-import { compile } from "../src/validate.js";
-import { generate } from "../src/generators/index.js";
+import { compile } from "../src/contract/compile.js";
+import { generate } from "../src/presentation/outputs.js";
 import { mermaidBrowser } from "../scripts/browser.js";
 let context: Awaited<ReturnType<typeof mermaidBrowser>>;
 beforeAll(async () => {

@@ -59,6 +59,10 @@ renderは`.artifacts/render/`へSVG/PNGを出力する。三図を開き、多�
 
 ## 内部構造
 
+責務分割と依存方向は[ソース構成](docs/source-architecture.md)を参照。`contract/`が入力・検証・正規化、`features/`が差分・選択・テスト対応・DB比較、`presentation/`が図とレポート、`adapters/`がファイル・Vitest・PostgreSQLの取得、`application/`が実行の組み立てを担当する。`src/cli.ts`は引数・表示と具体adapterの接続を行う入口。外部I/Oはport経由で渡し、純粋な処理からadapterを参照しない。
+
+`tests/architecture.test.ts`で依存方向・機能間依存・循環を、`tests/application.test.ts`でport越しの実行を検査する。新しい整合性検査はfeature、新しい図・レポートはpresentation、新しい証跡取得元はadapterへ配置する。
+
 YAML解析・SourceMap → strict Zod schema → 参照・意味検証 → ASCII ID順の内部IR → 四Generator → CLI出力。検証済みIRに配列と種類別ID索引を持たせ、SourceMapと位置を生成物から分離する。ノードIDは種類・スコープ・元IDをUTF-8 hex符号化して作る。表示名からIDを作らず、図種別ごとに構文記号をエスケープする。
 
 IRは内部専用。配列は集合として正規化、initialのみ明示値を使う。Rule本文変更はcatalogだけに現れる。状態遷移の正本はMachine、関連の正本はRelationship。物理キーや外部IDフィールドを推測しない。

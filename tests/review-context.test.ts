@@ -4,11 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { stringify } from "yaml";
 import { spawnSync } from "node:child_process";
-import { compile } from "../src/validate.js";
-import { review } from "../src/review.js";
-import { context, contextKinds } from "../src/context.js";
+import { compile } from "../src/contract/compile.js";
+import { reviewReport as review } from "../src/application/commands/review.js";
+import { contextReport as context } from "../src/application/commands/context.js";
+import { contextKinds } from "../src/features/context/index.js";
 import { run } from "../src/cli.js";
-import type { Contract } from "../src/schema.js";
+import type { Contract } from "../src/contract/model.js";
 const source = await readFile("contracts/expenses/contract.yaml", "utf8");
 const base = compile(source).ir!;
 function changed(edit: (c: Contract) => void) {

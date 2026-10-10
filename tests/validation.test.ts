@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { stringify, parse } from "yaml";
-import { compile } from "../src/validate.js";
+import { compile } from "../src/contract/compile.js";
 import { cases } from "./cases.js";
-import type { Contract } from "../src/schema.js";
+import type { Contract } from "../src/contract/model.js";
 const fixture = (name: string) =>
   readFileSync(`tests/fixtures/${name}.yaml`, "utf8");
 const base = parse(fixture("expenses")) as Contract;

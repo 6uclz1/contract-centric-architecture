@@ -11,3 +11,10 @@
 - 変更後は`pnpm typecheck`、関連テスト、`pnpm validate`、`pnpm check`を実行する。
 - Contractの意味に影響しないリファクタリングではContract更新不要。
 - 第三者評価・性能値・CI結果は実測したものだけを報告する。
+
+# Source boundaries
+
+- `docs/source-architecture.md`の責務分割と依存方向を守る。
+- Contract基盤・featureに外部I/Oや表示処理を追加しない。feature同士をimportしない。
+- 外部I/Oはapplicationのportを介し、入口で具体adapterを接続する。
+- `pnpm test`に含まれるarchitecture testでimport・再export・type-only依存と循環を確認する。

@@ -1,0 +1,111 @@
+import type { IR } from "../../contract/model.js";
+import { multiplicity } from "../../contract/multiplicity.js";
+import { stableDiagnostics, type Diagnostic } from "../../support/diagnostics.js";
+import { collector, duplicates, sameSet, type Parts } from "../../support/validation.js";
+import type { SourceMap } from "../../support/source-map.js";
+import type { DatabaseMapping } from "./schema.js";
+export interface DatabaseComparison { diagnostics: Diagnostic[]; mapping?: DatabaseMapping }
+export function compareDatabase(ir: IR, model: DatabaseMapping, sourceMap: SourceMap): DatabaseComparison {
+  const diagnostics: Diagnostic[] = [];
+  const add = collector(sourceMap, diagnostics);
+  const checkIds = <T>(items: T[], key: (v: T) => string, path: Parts, prop: string) =>
+    duplicates(items, key, (i, k) => add("ID_DUPLICATE", `Duplicate ${prop}: ${k}`, [...path, i, prop], k));
+  const checkColumns = (names: string[], available: Set<string>, path: Parts, element: string) => {
+    duplicates(names, (v) => v, (i, k) => add("DB_SCHEMA_INVALID", `Duplicate key column: ${k}`, [...path, i], element));
+    names.forEach((c, i) => { if (!available.has(c)) add("DB_SCHEMA_INVALID", `Unknown column: ${c}`, [...path, i], element); });
+  };
+  checkIds(model.tables, (v) => v.id, ["tables"], "id");
+  const tables = new Map(model.tables.map((t) => [t.id, t]));
+  for (const [i, t] of model.tables.entries()) {
+    checkIds(t.columns, (v) => v.id, ["tables", i, "columns"], "id");
+    checkIds(t.uniqueKeys, (v) => v.id, ["tables", i, "uniqueKeys"], "id");
+    if (t.primaryKey && t.uniqueKeys.some((k) => k.id === t.primaryKey!.id)) add("ID_DUPLICATE", `Duplicate key ID: ${t.primaryKey.id}`, ["tables", i, "primaryKey", "id"], t.primaryKey.id);
+    checkIds(t.foreignKeys, (v) => v.id, ["tables", i, "foreignKeys"], "id");
+    const names = new Set(t.columns.map((c) => c.id));
+    for (const [j, c] of t.columns.entries()) if (c.type === "enum") duplicates(c.values, (v) => v, (k, value) => add("DB_SCHEMA_INVALID", `Duplicate enum value: ${value}`, ["tables", i, "columns", j, "values", k], t.id));
+    for (const [j, k] of t.uniqueKeys.entries()) checkColumns(k.columns, names, ["tables", i, "uniqueKeys", j, "columns"], t.id);
+    if (t.primaryKey) {
+      checkColumns(t.primaryKey.columns, names, ["tables", i, "primaryKey", "columns"], t.id);
+      for (const c of t.primaryKey.columns) if (t.columns.find((v) => v.id === c)?.nullable) add("DB_SCHEMA_INVALID", "Primary key columns must be NOT NULL", ["tables", i, "primaryKey", "columns"], t.id);
+    }
+    for (const [j, fk] of t.foreignKeys.entries()) {
+      const path: Parts = ["tables", i, "foreignKeys", j];
+      checkColumns(fk.columns, names, [...path, "columns"], fk.id);
+      const target = tables.get(fk.references.table);
+      if (!target) { add("DB_SCHEMA_INVALID", `Unknown referenced table: ${fk.references.table}`, [...path, "references", "table"], fk.id); continue; }
+      checkColumns(fk.references.columns, new Set(target.columns.map((c) => c.id)), [...path, "references", "columns"], fk.id);
+      if (fk.columns.length !== fk.references.columns.length) add("DB_SCHEMA_INVALID", "FK column counts differ", path, fk.id);
+      if (![...target.uniqueKeys, ...(target.primaryKey ? [target.primaryKey] : [])].some((k) => sameSet(k.columns, fk.references.columns))) add("DB_SCHEMA_INVALID", "FK target must be a declared full unique/primary key", [...path, "references", "columns"], fk.id);
+      fk.columns.forEach((name, k) => {
+        const local = t.columns.find((c) => c.id === name), remote = target.columns.find((c) => c.id === fk.references.columns[k]);
+        if (local && remote && (local.type !== remote.type || (local.type === "enum" && remote.type === "enum" && !sameSet(local.values, remote.values)))) add("DB_SCHEMA_INVALID", "FK column types differ", [...path, "columns", k], fk.id);
+      });
+    }
+  }
+  // Avoid diagnostics derived from an invalid schema inventory.
+  if (diagnostics.length) return { diagnostics: stableDiagnostics(diagnostics) };
+  checkIds(model.entities, (v) => v.entity, ["entities"], "entity");
+  checkIds(model.entities, (v) => v.table, ["entities"], "table");
+  checkIds(model.relationships, (v) => v.relationship, ["relationships"], "relationship");
+  checkIds(model.relationships, (v) => `${v.table}/${v.foreignKey}`, ["relationships"], "foreignKey");
+  checkIds(model.constraints, (v) => v.constraint, ["constraints"], "constraint");
+  const entities = new Map(model.entities.map((e) => [e.entity, e]));
+  for (const [i, mapping] of model.entities.entries()) {
+    const e = ir.indexes.entities.get(mapping.entity), table = tables.get(mapping.table);
+    if (!e) add("REF_NOT_FOUND", `Unknown Entity: ${mapping.entity}`, ["entities", i, "entity"], mapping.entity);
+    if (!table) add("DB_MAPPING_INVALID", `Unknown table: ${mapping.table}`, ["entities", i, "table"], mapping.entity);
+    checkIds(mapping.fields, (v) => v.field, ["entities", i, "fields"], "field");
+    checkIds(mapping.fields, (v) => v.column, ["entities", i, "fields"], "column");
+    if (!e || !table) continue;
+    for (const [j, pair] of mapping.fields.entries()) {
+      const field = e.fields.find((f) => f.id === pair.field), col = table.columns.find((c) => c.id === pair.column);
+      const path: Parts = ["entities", i, "fields", j];
+      if (!field) add("FIELD_NOT_FOUND", `Unknown field: ${e.id}.${pair.field}`, [...path, "field"], e.id);
+      if (!col) add("DB_MAPPING_INVALID", `Unknown column: ${table.id}.${pair.column}`, [...path, "column"], e.id);
+      if (!field || !col) continue;
+      const expectedType = field.type === "state" ? "enum" : field.type;
+      const values = field.type === "state" ? ir.indexes.machines.get(field.machine)!.states : field.type === "enum" ? field.values : undefined;
+      if (expectedType !== col.type || (values && col.type === "enum" && !sameSet(values, col.values))) add("DB_TYPE_MISMATCH", `Type/value set mismatch: ${e.id}.${field.id} → ${table.id}.${col.id}`, [...path, "column"], e.id);
+      if (field.required === col.nullable) add("DB_NULLABILITY_MISMATCH", `required:${field.required} expects nullable:${!field.required}`, [...path, "column"], e.id);
+    }
+    for (const f of e.fields) if (!mapping.fields.some((m) => m.field === f.id)) add("DB_UNVERIFIED", `Unmapped field: ${e.id}.${f.id}`, ["entities", i, "fields"], e.id, "warning");
+  }
+  for (const e of ir.entities) if (!entities.has(e.id)) add("DB_UNVERIFIED", `Unmapped Entity: ${e.id}`, [], e.id, "warning");
+  // Invalid mappings must not masquerade as type/cardinality mismatches.
+  if (diagnostics.some((d) => d.severity === "error")) return { diagnostics: stableDiagnostics(diagnostics) };
+  const usedTables = new Set(model.entities.map((m) => m.table));
+  for (const t of model.tables) if (!usedTables.has(t.id)) add("DB_UNVERIFIED", `Table outside Entity mappings: ${t.id}`, ["tables", model.tables.indexOf(t)], t.id, "warning");
+  for (const [i, mapping] of model.relationships.entries()) {
+    const r = ir.indexes.relationships.get(mapping.relationship), table = tables.get(mapping.table);
+    const path: Parts = ["relationships", i];
+    if (!r) { add("REF_NOT_FOUND", `Unknown Relationship: ${mapping.relationship}`, [...path, "relationship"], mapping.relationship); continue; }
+    const fk = table?.foreignKeys.find((v) => v.id === mapping.foreignKey);
+    if (!fk) { add("DB_MAPPING_INVALID", `Unknown foreign key: ${mapping.table}.${mapping.foreignKey}`, [...path, "foreignKey"], r.id); continue; }
+    const ownerEntity = mapping.owner === "from" ? r.from : r.to, otherEntity = mapping.owner === "from" ? r.to : r.from;
+    const owner = entities.get(ownerEntity), other = entities.get(otherEntity);
+    if (!owner || !other || owner.table !== mapping.table || other.table !== fk.references.table) { add("DB_MAPPING_INVALID", "FK owner/target tables do not match explicit Relationship endpoints", path, r.id); continue; }
+    if (fk.columns.length !== 1) { add("DB_MAPPING_INVALID", "Relationship checks support single-column FKs only", [...path, "foreignKey"], r.id); continue; }
+    const perOwner = mapping.owner === "from" ? r.targetsPerSource : r.sourcesPerTarget;
+    const perOther = mapping.owner === "from" ? r.sourcesPerTarget : r.targetsPerSource;
+    if (perOwner.max !== 1) add("DB_CARDINALITY_MISMATCH", "A direct FK represents at most one referenced endpoint per owner; junction tables are unsupported", [...path, "owner"], r.id);
+    const col = table!.columns.find((c) => c.id === fk.columns[0])!;
+    if (col.nullable !== (perOwner.min === 0)) add("DB_NULLABILITY_MISMATCH", `Relationship owner-side ${multiplicity(perOwner)} does not match FK nullable:${col.nullable}`, [...path, "foreignKey"], r.id);
+    const unique = [...table!.uniqueKeys, ...(table!.primaryKey ? [table!.primaryKey] : [])].some((k) => sameSet(k.columns, fk.columns));
+    if (unique !== (perOther.max === 1)) add("DB_CARDINALITY_MISMATCH", `Opposite endpoint ${multiplicity(perOther)} ${perOther.max === 1 ? "requires" : "does not permit the restriction of"} a single-column unique FK`, [...path, "foreignKey"], r.id);
+    if (perOther.min === 1) add("DB_UNVERIFIED", "A foreign key cannot guarantee at least one owner row for every referenced row", [...path, "foreignKey"], r.id, "warning");
+  }
+  for (const r of ir.relationships) if (!model.relationships.some((m) => m.relationship === r.id)) add("DB_UNVERIFIED", `Unmapped Relationship: ${r.id}`, [], r.id, "warning");
+  for (const [i, mapping] of model.constraints.entries()) {
+    const c = ir.indexes.constraints.get(mapping.constraint), table = tables.get(mapping.table), path: Parts = ["constraints", i];
+    if (!c) { add("REF_NOT_FOUND", `Unknown Constraint: ${mapping.constraint}`, [...path, "constraint"], mapping.constraint); continue; }
+    const entity = entities.get(c.entity), mappedKey = [...(table?.uniqueKeys ?? []), ...(table?.primaryKey ? [table.primaryKey] : [])].find((k) => k.id === mapping.key);
+    if (!entity || entity.table !== mapping.table) { add("DB_MAPPING_INVALID", "Constraint must map to its Entity table", [...path, "table"], c.id); continue; }
+    if (!mappedKey) { add("DB_UNIQUE_MISSING", "Mapped full unique/primary key is absent", [...path, "key"], c.id); continue; }
+    const names = c.fields.map((f) => entity.fields.find((pair) => pair.field === f)?.column);
+    if (names.some((n) => n === undefined)) add("DB_MAPPING_INVALID", "Constraint fields must all have explicit column mappings", path, c.id);
+    else if (!sameSet(names as string[], mappedKey.columns)) add("DB_UNIQUE_MISSING", "Unique key columns must exactly match mapped Constraint fields", [...path, "key"], c.id);
+  }
+  for (const c of ir.constraints) if (!model.constraints.some((m) => m.constraint === c.id)) add("DB_UNVERIFIED", `Unmapped Constraint: ${c.id}`, [], c.id, "warning");
+  if (diagnostics.some((d) => d.severity === "error")) return { diagnostics: stableDiagnostics(diagnostics) };
+  return { diagnostics: stableDiagnostics(diagnostics), mapping: model };
+}

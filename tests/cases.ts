@@ -1,4 +1,4 @@
-import type { Contract } from "../src/schema.js";
+import type { Contract } from "../src/contract/model.js";
 export interface Case {
   name: string;
   code: string;

@@ -1,50 +1,16 @@
-import { spawn } from "node:child_process";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { stringify } from "yaml";
-import { parseInput } from "../src/parser.js";
-import { compile } from "../src/validate.js";
-import { database, databaseSchema } from "../src/extensions/database.js";
-import { postgresSnapshot } from "../src/extensions/postgres.js";
-import type { Diagnostic } from "../src/diagnostics.js";
-export const projectRoot = resolve(import.meta.dirname, "..");
-export async function compose(args: string[], input?: string): Promise<string> {
-  return new Promise((accept, reject) => {
-    const child = spawn("docker", ["compose", "--file", resolve(projectRoot, "compose.yaml"), ...args], {
-      cwd: projectRoot, stdio: ["pipe", "pipe", "pipe"], timeout: 300_000,
-    });
-    let stdout = "", stderr = "";
-    child.stdout.setEncoding("utf8").on("data", (s: string) => { stdout += s; });
-    child.stderr.setEncoding("utf8").on("data", (s: string) => { stderr += s; });
-    child.on("error", reject);
-    child.on("close", (code) => code === 0 ? accept(stdout) : reject(new Error(`docker compose failed (${code}): ${stderr}`)));
-    child.stdin.on("error", (e: NodeJS.ErrnoException) => { if (e.code !== "EPIPE") reject(e); });
-    child.stdin.end(input);
-  });
-}
-export async function sql(input: string): Promise<string> {
-  return compose(["exec", "-T", "db", "psql", "-X", "-qAt", "-v", "ON_ERROR_STOP=1", "-U", "cca", "-d", "cca"], input);
-}
-export async function inspectSQL(): Promise<string> { return readFile(resolve(projectRoot, "infra/postgres/introspect.sql"), "utf8"); }
-export async function liveCheck(): Promise<{ exitCode: number; diagnostics: Diagnostic[]; report?: string }> {
-  const input = resolve(projectRoot, "contracts/expenses/contract.yaml");
-  const compiled = compile(await readFile(input, "utf8"), input);
-  if (!compiled.ir || compiled.diagnostics.length) return { exitCode: 1, diagnostics: compiled.diagnostics };
-  const mappingFile = resolve(projectRoot, "contracts/expenses/db-mapping.yaml");
-  const mapping = parseInput(await readFile(mappingFile, "utf8"), mappingFile, databaseSchema, "cca.dev/db-mapping/v1alpha1");
-  if (!mapping.value) return { exitCode: 1, diagnostics: mapping.diagnostics };
-  const raw = JSON.parse(await sql(`BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;\nSET LOCAL statement_timeout = '15s';\n${await inspectSQL()}\nCOMMIT;`));
-  const snapshot = postgresSnapshot(raw);
-  if (!snapshot.tables) return { exitCode: 1, diagnostics: snapshot.diagnostics };
-  // Replace the illustrative tables completely. Only explicit mappings are reused.
-  const file = resolve(projectRoot, ".artifacts/db-live.yaml");
-  const text = stringify({ ...mapping.value, tables: snapshot.tables });
-  await mkdir(resolve(projectRoot, ".artifacts"), { recursive: true });
-  await writeFile(file, text);
-  const result = database(compiled.ir, text, file, "postgres17");
-  return { exitCode: result.diagnostics.length ? 1 : 0, ...result,
-    ...(result.report ? { report: `Source: live PostgreSQL 17 public-schema catalog (read-only transaction).\n\n${result.report}` } : {}) };
+import { compose, sql, projectRoot, postgresCatalog } from "../src/adapters/postgres/local.js";
+import { filesystem } from "../src/adapters/filesystem/index.js";
+import { writeText } from "../src/adapters/filesystem/text.js";
+import { liveDatabase } from "../src/application/commands/live-database.js";
+export async function liveCheck() {
+  return liveDatabase({
+    input: resolve(projectRoot, "contracts/expenses/contract.yaml"),
+    mapping: resolve(projectRoot, "contracts/expenses/db-mapping.yaml"),
+    output: resolve(projectRoot, ".artifacts/db-live.yaml"),
+  }, { ...filesystem, writeText, postgresCatalog });
 }
 async function main() {
   const command = process.argv[2];

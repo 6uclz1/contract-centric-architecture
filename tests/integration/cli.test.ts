@@ -13,7 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { run } from "../../src/cli.js";
-import { managedFiles } from "../../src/generators/index.js";
+import { managedFiles } from "../../src/presentation/outputs.js";
 import { parse, stringify } from "yaml";
 const roots: string[] = [];
 async function setup() {

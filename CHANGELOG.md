@@ -2,6 +2,8 @@
 
 ## Unreleased — 2026-10-10
 
+ソースをContract基盤、機能、表示、外部I/O adapter、application、CLIに分割。検証の段階・打切りを維持して規則群を独立させ、test-linksとDBの取得・判定・表示を分離した。reviewは内部差分、contextは閲覧選択を返し、部分IRに全索引を保持する構成を解消。具体I/Oは入口からportで渡し、依存境界・循環のarchitecture testとport越しの実行テストを追加。入力言語の意味、診断コード、CLIのJSON形・終了コード、管理対象四ファイルは変更しない。
+
 Phase 2候補すべて（Contract差分レビュー、局所コンテキスト、Ruleとテスト対応、限定DB整合検査）を追加。`review`は検証済み旧・新Contractからプロパティ差分・生成物への影響をMarkdownで返す。`context`は種類別IDによる仕様抽出を行う。入力API・意味論・管理対象四ファイル・既存CLIのJSON診断配列は変更しない。新CLIのJSONは診断とMarkdownレポートのみで、公開IRを追加しない。
 
 Markdownエスケープを一回の変換にし、縦棒用の文字参照の`#`を再エスケープして表示が壊れる問題を修正。Contractの意味には影響しない。実装範囲と未評価事項はdocs/phase2-plan.mdに記録。

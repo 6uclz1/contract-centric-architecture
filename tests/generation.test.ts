@@ -1,10 +1,11 @@
 import { it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { parse, stringify } from "yaml";
-import { compile } from "../src/validate.js";
-import { generate, managedFiles } from "../src/generators/index.js";
-import { nodeId, anchor, stateLabel } from "../src/generators/common.js";
-import type { Contract } from "../src/schema.js";
+import { compile } from "../src/contract/compile.js";
+import { generate, managedFiles } from "../src/presentation/outputs.js";
+import { nodeId, stateLabel } from "../src/presentation/diagrams/common.js";
+import { anchor } from "../src/presentation/markdown.js";
+import type { Contract } from "../src/contract/model.js";
 const base = parse(
   readFileSync("tests/fixtures/expenses.yaml", "utf8"),
 ) as Contract;

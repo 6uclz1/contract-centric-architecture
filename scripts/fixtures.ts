@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { stringify, parse, parseDocument, isMap, isSeq, type Node } from "yaml";
 import { cases } from "../tests/cases.js";
-import type { Contract } from "../src/schema.js";
+import type { Contract } from "../src/contract/model.js";
 const original = readFileSync("contracts/expenses/contract.yaml", "utf8"),
   base = parse(original) as Contract;
 for (const test of cases) {

@@ -405,17 +405,19 @@ pnpm cca check --input contracts/expenses/contract.yaml --out docs/generated/exp
 ```text
 contracts/expenses/contract.yaml
 contracts/expenses/domain.md
-src/schema.ts
-src/parser.ts
-src/ir.ts
-src/normalize.ts
-src/validate.ts
-src/diagnostics.ts
-src/generators/er.ts
-src/generators/class.ts
-src/generators/state.ts
-src/generators/catalog.ts
-src/cli.ts
+src/cli.ts                         # 引数・表示・具体adapterの接続
+src/cli/{args,format}.ts
+src/application/{execute,request,result,ports,load}.ts
+src/application/commands/          # 七CLIコマンドとローカル実DB照合
+src/contract/{model,compile,normalize,multiplicity}.ts
+src/contract/input/{schema,parse}.ts
+src/contract/validation/           # 規則群と検証順序
+src/features/{review,context,test-links,database}/
+src/presentation/diagrams/
+src/presentation/reports/
+src/presentation/{catalog,outputs,markdown,model-format}.ts
+src/adapters/{filesystem,vitest,postgres}/
+src/support/                      # 入力共通・位置情報・診断・出力契約
 tests/fixtures/
 tests/expected/
 tests/integration/
@@ -430,7 +432,7 @@ package.json
 pnpm-lock.yaml
 ```
 
-単一パッケージで開始する。内部モジュールの責務を分け、公開npmパッケージへの分割は行わない。
+単一パッケージを維持する。内部モジュールの責務と依存方向は[ソース構成](docs/source-architecture.md)に従い、公開npmパッケージへの分割は行わない。外部I/Oはapplicationのportを入口で具体adapterに接続し、Contract基盤と各featureはadapterを参照しない。依存境界はarchitecture testで検査する。この構成変更は入力API・意味論・実装スコープを変更しない。
 
 Node.jsは実装時点で公式にサポートされたLTSを選び、CIとREADMEで固定する。pnpmと依存バージョンも固定しlockfileをコミットする。Zodのメジャーバージョンに応じたstrictな入力検証を使用する。
 
